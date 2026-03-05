@@ -10,7 +10,7 @@ pipeline {
 
         stage('Clone Repo') {
             steps {
-                git 'https://github.com/rojergohn/cales.git'
+                git branch: 'cicdbranch', url: 'https://github.com/rojergohn/cales.git'
             }
         }
 
