@@ -34,7 +34,7 @@ pipeline {
 
         stage('Login to ECR') {
             steps {
-                withCredentials([aws(credentialsId: 'aws-creds')]) {
+                withCredentials([aws(credentialsId: 'aws-jenkins-creds')]) {
                     sh """
                     aws ecr get-login-password --region ${AWS_REGION} | \
                     docker login --username AWS \
