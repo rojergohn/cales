@@ -3,8 +3,9 @@ pipeline {
 
     environment {
         AWS_REGION = "us-east-1"
-        ECR_REPO = "205994119856.dkr.ecr.us-east-1.amazonaws.com/cals"
-        AWS_ACCOUNT_ID = '205994119856'
+        AWS_ACCOUNT_ID = "205994119856"
+        ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/cals"
+        IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
     stages {
@@ -17,19 +18,23 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t cals:$BUILD_NUMBER .'
+                sh """
+                docker build -t cals:${IMAGE_TAG} .
+                """
             }
         }
 
         stage('Tag Image') {
             steps {
-                sh 'docker tag cals:$BUILD_NUMBER $ECR_REPO:$BUILD_NUMBER'
+                sh """
+                docker tag cals:${IMAGE_TAG} ${ECR_REPO}:${IMAGE_TAG}
+                """
             }
         }
 
         stage('Login to ECR') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+                withCredentials([aws(credentialsId: 'aws-creds')]) {
                     sh """
                     aws ecr get-login-password --region ${AWS_REGION} | \
                     docker login --username AWS \
@@ -41,9 +46,19 @@ pipeline {
 
         stage('Push Image to ECR') {
             steps {
-                sh 'docker push $ECR_REPO:$BUILD_NUMBER'
+                sh """
+                docker push ${ECR_REPO}:${IMAGE_TAG}
+                """
             }
         }
+    }
 
+    post {
+        success {
+            echo "✅ Image pushed successfully to ECR: ${ECR_REPO}:${IMAGE_TAG}"
+        }
+        failure {
+            echo "❌ Pipeline failed"
+        }
     }
 }
